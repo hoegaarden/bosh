@@ -134,29 +134,29 @@ module Bosh::Director
 
       context 'when creating links' do
         context 'validate payload' do
-          context 'when link_provider_id is invaid' do
+          context 'when link_provider_id is invalid' do
             it 'raise error for missing link_provider_id' do
               post '/', JSON.generate('{}'), 'CONTENT_TYPE' => 'application/json'
               expect(last_response.status).to eq(400)
-              expect(last_response.body).to eq('{"code":810001,"description":"Invalid json: provide valid `link_provider_id`"}')
+              expect(last_response.body).to eq('{"code":810001,"description":"Invalid request: `link_provider_id` must be an Integer"}')
             end
             it 'raise error for invalid link_provider_id' do
               # TODO: Links: check if Integer validation is required or not?
               post '/', JSON.generate('link_provider_id' => '3'), 'CONTENT_TYPE' => 'application/json'
               expect(last_response.status).to eq(400)
-              expect(last_response.body).to eq('{"code":810001,"description":"Invalid json: provide valid `link_provider_id`"}')
+              expect(last_response.body).to eq('{"code":810001,"description":"Invalid request: `link_provider_id` must be an Integer"}')
             end
           end
           context 'when link_consumer is invalid' do
             it 'raise error for missing link_consumer' do
               post '/', JSON.generate('link_provider_id' => 3), 'CONTENT_TYPE' => 'application/json'
               expect(last_response.status).to eq(400)
-              expect(last_response.body).to eq('{"code":810001,"description":"Invalid json: missing `link_consumer`"}')
+              expect(last_response.body).to eq('{"code":810001,"description":"Invalid request: `link_consumer` section must be defined"}')
             end
             it 'raise error for invalid owner_object_name' do
               post '/', JSON.generate('link_provider_id' => 3, 'link_consumer' => { 'owner_object_name' => '' }), 'CONTENT_TYPE' => 'application/json'
               expect(last_response.status).to eq(400)
-              expect(last_response.body).to eq('{"code":810001,"description":"Invalid json: provide valid `owner_object_name`"}')
+              expect(last_response.body).to eq('{"code":810001,"description":"Invalid request: `link_consumer.owner_object_type` should be \'external\'"}')
             end
           end
 
@@ -227,12 +227,11 @@ module Bosh::Director
                 end
               end
 
-
               context 'when NO network in provided' do
                 include_examples 'creates consumer and link'
               end
 
-              context 'when network in providerd' do
+              context 'when network in provided' do
                 let(:networks) { %w[neta netb] }
                 let(:provider_json_content) do
                   {
