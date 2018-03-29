@@ -711,7 +711,7 @@ describe 'links api', type: :integration do
         it 'returns error' do
           response = send_director_post_request("/links", '', JSON.generate(payload_json))
           error_response = JSON.parse(response.read_body)
-          expect(error_response['description']).to eq("Invalid json: provide valid `link_provider_id`")
+          expect(error_response['description']).to eq('Invalid request: `link_provider_id` must be an Integer')
         end
       end
 
@@ -729,7 +729,7 @@ describe 'links api', type: :integration do
         it 'returns error' do
           response = send_director_post_request("/links", '', JSON.generate(payload_json))
           error_response = JSON.parse(response.read_body)
-          expect(error_response['description']).to eq("Invalid json: provide valid `owner_object_name`")
+          expect(error_response['description']).to eq('Invalid request: `link_consumer.owner_object_name` must not be empty')
         end
       end
 
@@ -781,6 +781,53 @@ describe 'links api', type: :integration do
 
         expect(response.read_body).to include("Not authorized: '/links'")
       end
+    end
+  end
+
+  context 'when doing DELETE request to delete link' do
+    let(:provider_id) {1}
+    let(:payload_json) do
+      {
+        'link_provider_id'=> provider_id,
+        'link_consumer' => {
+          'owner_object_name'=> 'external_consumer_1',
+          'owner_object_type'=> 'external',
+        },
+        'network' => 'a'
+      }
+    end
+    let(:jobs) do
+      [
+        {
+          'name' => 'provider',
+          'provides' => {
+            'provider' => {
+              'as' => 'foo',
+              'shared' => true
+            }
+          }
+        }
+      ]
+    end
+
+    before do
+      provider_response = get_link_providers
+      provider_id = provider_response.first['id']
+      send_director_post_request("/links", '', JSON.generate(payload_json))
+    end
+
+    it 'performs a successful delete when link exists' do
+      response = send_director_delete_request("/links/1", '')
+      expect(response.read_body).to be_empty
+      expect(response).to be_an_instance_of(Net::HTTPOK)
+    end
+
+    it 'raises error if link does not exist' do
+      response = send_director_delete_request("/links/2", '')
+      expect(response).to be_an_instance_of(Net::HTTPNotFound)
+      parsed_body_hash = JSON.parse(response.body)
+      expect(parsed_body_hash['code']).to eq(Bosh::Director::LinkLookupError.new.error_code)
+      expect(parsed_body_hash['description']).to eq('Invalid link id: 2')
     end
   end
 end
